@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 	bpo::options_description options("Options"), hidden("Hidden"), all_options("All Options");
 	options.add_options()
 	("help,h", "Shows this help")
-	("unary-limit,u", bpo::value<int>(), "Maximum number of consecutive application of unary operators.")
+	("unary-limit,u", bpo::value<int>()->default_value(2), "Maximum number of consecutive application of unary operators.")
 	("quiet,q", bpo::value<bool>(), "Suppress progress reporting.")
 	("no-cutoff-sqrt", "Do not restrict sqrt operand.")
 	("output-file,o", bpo::value<string>(), "Output file name.");

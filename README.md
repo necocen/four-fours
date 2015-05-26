@@ -16,10 +16,10 @@ $ four_fours 1234
 
 ```
 Options:
-  -h [ --help ]            Shows this help
-  -u [ --unary-limit ] arg Maximum number of consecutive application of unary
-                           operators.
-  -q [ --quiet ] arg       Suppress progress reporting.
-  --no-cutoff-sqrt         Do not restrict sqrt operand.
-  -o [ --output-file ] arg Output file name.
+  -h [ --help ]                 Shows this help
+  -u [ --unary-limit ] arg (=2) Maximum number of consecutive application of
+                                unary operators.
+  -q [ --quiet ] arg            Suppress progress reporting.
+  --no-cutoff-sqrt              Do not restrict sqrt operand.
+  -o [ --output-file ] arg      Output file name.
 ```
