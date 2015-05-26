@@ -23,3 +23,7 @@ Options:
   --no-cutoff-sqrt              Do not restrict sqrt operand.
   -o [ --output-file ] arg      Output file name.
 ```
+
+## Acknowledgement
+* Using Boost.Optional, Boost.Program_options
+* Using MathJax for visualizing equations
