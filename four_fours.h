@@ -80,6 +80,13 @@ typedef unsigned char exp_rep_t[];
 /// 式表現のunique_ptr
 typedef unique_ptr<exp_rep_t> exp_rep_p;
 
+/*
+式表現の形式：
+第０バイト：トークンの個数
+あとは4bitずつのトークン列
+奇数個の場合は上位4bitが最後のトークン、残りは0。
+*/
+
 /// 式表現の指定位置のトークンを取得
 unsigned char token_at(exp_rep_t e, int i);
 /// 式表現の長さを取得

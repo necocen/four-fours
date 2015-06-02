@@ -225,16 +225,12 @@ equations u_extend(equations&& seed, equations&& pool, u_op op) {
 }
 
 inline unsigned char token_at(exp_rep_t e, int i) {
-	return (i % 2 == 0) ? (e[i / 2] >> 4) : (e[i / 2] & 0x0f);
+	return (i % 2 == 0) ? (e[i / 2 + 1] >> 4) : (e[i / 2 + 1] & 0x0f);
 }
 
 /// 式のトークン数を返します。
-size_t explen(exp_rep_t e) {
-	for (int i = 0;;i++) {
-		if ((e[i] & 0x0f) == 0) {
-			return (e[i] & 0xf0) == 0 ? i * 2 : i * 2 + 1;
-		}
-	}
+inline size_t explen(exp_rep_t e) {
+	return e[0];
 }
 
 string expstr(exp_rep_t e) {
@@ -271,69 +267,71 @@ exp_rep_p b_combine(exp_rep_t e1, exp_rep_t e2, const unsigned char t) {
 	size_t l1 = explen(e1);
 	size_t l2 = explen(e2);
 	size_t l = l1 + l2 + 1;
-	exp_rep_p e(new unsigned char[l / 2 + 1]); // lが奇数なら半分＋端数１、偶数なら半分＋ゼロ終端
+	exp_rep_p e(new unsigned char[1 + (l + 1) / 2]);
+
+
+	e[0] = l;
 	// copy of l1
-	memcpy(e.get(), e1, l1 / 2 + 1);
+	memcpy(e.get() + 1, e1 + 1, (l1 + 1) / 2);
 
 	// copy of l2
 	if (l1 % 2 == 0) {
-		memcpy(e.get() + l1 / 2, e2, l2 / 2 + 1);
+		memcpy(e.get() + 1 + l1 / 2, e2 + 1, (l2 + 1) / 2);
 	} else {
 		if (l2 % 2 == 0) {
-			e[l1 / 2] |= (e2[0] >> 4);
+			e[1 + l1 / 2] |= (e2[1] >> 4);
 			for (int i = 1; i < l2 / 2; i++) {
-				e[l1 / 2 + i] = ((e2[i - 1] & 0x0f) << 4) + ((e2[i] & 0xf0) >> 4);
+				e[1 + l1 / 2 + i] = ((e2[i] & 0x0f) << 4) + ((e2[i + 1] & 0xf0) >> 4);
 			}
-			e[l / 2 - 1] = (e2[l2 / 2 - 1] << 4);
+			e[l / 2] = (e2[l2 / 2] << 4);
 		} else {
-			e[l1 / 2] |= (e2[0] >> 4);
+			e[1 + l1 / 2] |= (e2[1] >> 4);
 			for (int i = 1; i <= l2 / 2; i++) {
-				e[l1 / 2 + i] = ((e2[i - 1] & 0x0f) << 4) + ((e2[i] & 0xf0) >> 4);
+				e[1 + l1 / 2 + i] = ((e2[i] & 0x0f) << 4) + ((e2[i + 1] & 0xf0) >> 4);
 			}
 		}
 	}
 
 	// copy t
 	if (l % 2 == 0) {
-		e[l / 2 - 1] |= (t & 0x0f);
-		e[l / 2] = '\0';
+		e[l / 2] |= (t & 0x0f);
 	} else {
-		e[l / 2] = (t << 4);
+		e[1 + l / 2] = (t << 4);
 	}
 	return e;
 }
 
 exp_rep_p u_combine(exp_rep_t e, const unsigned char t) {
 	size_t l = explen(e) + 1;
-	exp_rep_p r(new unsigned char[l / 2 + 1]);
-	memcpy(r.get(), e, l / 2 + 1);
+	exp_rep_p r(new unsigned char[1 + (l + 1) / 2]);
+	r[0] = l;
+	memcpy(r.get() + 1, e + 1, l / 2 + 1);
 
 	if (l % 2 == 0) {
-		r[l / 2 - 1] |= (t & 0x0f);
-		r[l / 2] = '\0';
+		r[l / 2] |= (t & 0x0f);
 	} else {
-		r[l / 2] = (t << 4);
+		r[1 + l / 2] = (t << 4);
 	}
 	return r;
 }
 
 exp_rep_p n_combine(size_t length) {
 
-	exp_rep_p e(new unsigned char[length / 2 + 1]);
+	exp_rep_p e(new unsigned char[1 + (length + 1) / 2]);
 
 	if (length == 0) {
-		e[0] = (unsigned char) 0x00; // 終端文字のみ
+		e[0] = (unsigned char) 0x00; // 長さ０のみ
 	} else if (length == 1) {
-		e[0] = (unsigned char) 0x10; // 数字先頭と終端文字
+		e[0] = (unsigned char) 0x01; // 長さ１
+		e[1] = (unsigned char) 0x10; // 数字先頭
 	} else {
-		e[0] = (unsigned char) 0x12; // 数字先頭と数字継続
+		e[0] = (unsigned char) length; // 長さＮ
+		e[1] = (unsigned char) 0x12; // 数字先頭と数字継続
 		for (int i = 2; i <= length - 2; i += 2) {
-			e[i / 2] = (unsigned char) 0x22; // 数字継続
+			e[1 + i / 2] = (unsigned char) 0x22; // 数字継続
 		}
-		if (length % 2 == 0) {
-			e[length / 2] = (unsigned char) 0x00; // 終端文字
-		} else {
-			e[length / 2] = (unsigned char) 0x20; // 数字継続と終端文字
+		if (length % 2 != 0) {
+			e[1 + length / 2] = (unsigned char) 0x20; // 数字継続とゼロ
 		}
 	}
 	return e;
