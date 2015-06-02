@@ -113,7 +113,6 @@ equations&& think(string numbers) {
 
 	for (int i = 1; i < numbers.length(); i++) {
 		// 二項演算で結合（ここで並列化）
-		vector<equations> b_exts;
 
 		equations&& lhs = think(numbers.substr(0, i));
 		equations&& rhs = think(numbers.substr(i));
@@ -121,16 +120,16 @@ equations&& think(string numbers) {
 		#pragma omp parallel for
 		for (int j = 0; j < b_ops.size(); j++) {
 			equations b_ext = move(b_extend(move(lhs), move(rhs), b_ops[j]));
+
+			// 順次マージ
 			#pragma omp critical
-			b_exts.push_back(move(b_ext));
-		}
-		// マージ
-		for (auto it = b_exts.begin(); it != b_exts.end(); ++it) {
-			for (auto jt = it->begin(); jt != it->end(); ++jt) {
-				auto found = eqns.find(jt->first);
-				// 見つからないか、コストが低ければ採用
-				if (found == eqns.end() || found->second.cost > jt->second.cost) {
-					eqns[jt->first] = move(jt->second);
+			{
+				for (auto it = b_ext.begin(); it != b_ext.end(); ++it) {
+					auto found = eqns.find(it->first);
+					// 見つからないか、コストが低ければ採用
+					if (found == eqns.end() || found->second.cost > it->second.cost) {
+						eqns[it->first] = move(it->second);
+					}
 				}
 			}
 		}
@@ -141,20 +140,20 @@ equations&& think(string numbers) {
 	vector<equations> u_steps; // 各段階の拡大
 	for (int i = 0; i < unary_limit; i++) {
 		vector<equations> u_op_exts;
+		equations u_eqns;
 		#pragma omp parallel for
 		for (int j = 0; j < u_ops.size(); j++) {
 			equations u_ext = move(u_extend(move(i == 0 ? eqns : u_steps[i - 1]), move(eqns), u_ops[j]));
+
+			// 順次マージ
 			#pragma omp critical
-				u_op_exts.push_back(move(u_ext));
-		}
-		// マージ
-		equations u_eqns;
-		for (auto it = u_op_exts.begin(); it != u_op_exts.end(); ++it) {
-			for (auto jt = it->begin(); jt != it->end(); ++jt) {
-				auto found = u_eqns.find(jt->first);
-				// 見つからないか、コストが低ければ採用
-				if (found == u_eqns.end() || found->second.cost > jt->second.cost) {
-					u_eqns[jt->first] = move(jt->second);
+			{
+				for (auto it = u_ext.begin(); it != u_ext.end(); ++it) {
+					auto found = u_eqns.find(it->first);
+					// 見つからないか、コストが低ければ採用
+					if (found == u_eqns.end() || found->second.cost > it->second.cost) {
+						u_eqns[it->first] = move(it->second);
+					}
 				}
 			}
 		}
